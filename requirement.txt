@@ -1,0 +1,2 @@
+panda3d==1.9.4
+tensorflow==1.12.0
