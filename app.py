@@ -1,37 +1,52 @@
 from direct.showbase.ShowBase import ShowBase
+from panda3d.physics import ForceNode, LinearVectorForce
+
+from balle import Balle
+from gestionnaire_collision import GestionnaireCollision
+from panier import Panier
+from terrain import Terrain
 
 
 class App(ShowBase):
 
     def __init__(self):
         ShowBase.__init__(self)
+        self.FPS = 60
+
+        # Activation du moteur physique
+        self.enableParticles()
+
+        # Creation du gestionnaire de collision
+        self.gestionnaire_collision = GestionnaireCollision(self)
+        self.gestionnaire_collision.e = 0.78  # coefficient de restitution d'une balle de basket
 
         # Chargement du panier de basket
-        panier_basket = self.chargement_panier_basket()
-
-        # Modification de la rotation du panier de basket
-        panier_basket.setHpr(90, 90, 0)
-
-        # Modification de la taille du panier de bakset
-        taille = 0.001
-        panier_basket.setScale(taille, taille, taille)
+        panier = Panier(self)
 
         # Modification de la position du panier de basket
-        panier_basket.setPos(-20, 75, 0)
+        panier.set_position(-3.35, 10, 2)
 
-        # ShowBase.oobe(self)
+        # Chargement de la balle
+        self.balle = Balle(self)
 
-    def chargement_panier_basket(self):
-        # Chargement du panier de basket
-        obj = self.loader.loadModel("models/basketball_hoop/basketball_hoop.obj")
+        # Modification de la position de la balle
+        self.balle.set_position(1, 10, 2)
 
-        # Chargement de la texture
-        tex = self.loader.loadTexture("models/basketball_hoop/basketball_hoop_diffuse_noAO.jpg")
+        # ajout de la balle dans le gestionnaire de collision
+        self.gestionnaire_collision.ajout_element(self.balle)
 
-        # Association de la texture au panier de basket
-        obj.setTexture(tex)
+        # Chargement du terrain
+        Terrain(self)
 
-        # Ajout du panier de basket a la scene
-        obj.reparentTo(self.render)
-
-        return obj
+        # Creation d'un noeud pour la gravite lier au rendu
+        gravity_fn = ForceNode('force-gravite')
+        # Ajout de la force de gravite au rendu
+        self.render.attachNewNode(gravity_fn)
+        # Creation de force de gravite
+        gravity_force = LinearVectorForce(0, 0, -9.81)
+        # Ajout de la force de gravite au noeud
+        gravity_fn.addForce(gravity_force)
+        # Acceleration uniforme
+        gravity_force.setMassDependent(False)
+        # Ajout de la gravite au moteur physique
+        self.physicsMgr.addLinearForce(gravity_force)
