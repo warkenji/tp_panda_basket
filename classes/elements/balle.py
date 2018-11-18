@@ -1,12 +1,12 @@
 from numpy import mean
 from panda3d.core import CollisionSphere
 
-from element_modele import ElementModele
+from classes.elements.base.element_modele import ElementModele
 
 
 class Balle(ElementModele):
     def __init__(self, app):
-        ElementModele.__init__(self, app, "balle", "models/ball/NBA BASKETBALL.obj", "models/ball/NBA BASKETBALL DIFFUSE.jpg")
+        ElementModele.__init__(self, app, "balle", "modeles/ball/NBA BASKETBALL.obj", "modeles/ball/NBA BASKETBALL DIFFUSE.jpg")
 
         # Attache de l'acteur au moteur physique
         self.app.physicsMgr.attachPhysicalNode(self.acteur)

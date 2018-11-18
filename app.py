@@ -1,10 +1,10 @@
 from direct.showbase.ShowBase import ShowBase
 from panda3d.physics import ForceNode, LinearVectorForce
 
-from balle import Balle
-from gestionnaire_collision import GestionnaireCollision
-from panier import Panier
-from terrain import Terrain
+from classes.elements.balle import Balle
+from classes.elements.panier import Panier
+from classes.elements.terrain import Terrain
+from classes.gestionnaires_collision.base.gestionnaire_collision import GestionnaireCollision
 
 
 class App(ShowBase):

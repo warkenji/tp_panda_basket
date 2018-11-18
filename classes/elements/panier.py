@@ -1,9 +1,9 @@
-from element_modele import ElementModele
+from classes.elements.base.element_modele import ElementModele
 
 
 class Panier(ElementModele):
     def __init__(self, app):
-        ElementModele.__init__(self, app, "panier", "models/basketball_hoop/basketball_hoop.obj", "models/basketball_hoop/basketball_hoop_diffuse_noAO.jpg")
+        ElementModele.__init__(self, app, "panier", "modeles/basketball_hoop/basketball_hoop.obj", "modeles/basketball_hoop/basketball_hoop_diffuse_noAO.jpg")
 
         # Modification de la rotation du panier de basket
         self.set_rotation(90, 90, 0)

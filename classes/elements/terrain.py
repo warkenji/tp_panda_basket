@@ -1,11 +1,11 @@
 from panda3d.core import CollisionPlane, Plane, Vec3, Point3
 
-from element_plat import ElementPlat
+from classes.elements.base.element_plat import ElementPlat
 
 
 class Terrain(ElementPlat):
     def __init__(self, app):
-        ElementPlat.__init__(self, app, "terrain", "models/floor/floor.png")
+        ElementPlat.__init__(self, app, "terrain", "modeles/floor/floor.png")
 
         # Modification de la rotation du terrain
         self.set_rotation(180, 270, 0)
