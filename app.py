@@ -1,52 +1,58 @@
 from direct.showbase.ShowBase import ShowBase
-from panda3d.physics import ForceNode, LinearVectorForce
+from numpy import mean
 
 from classes.elements.balle import Balle
 from classes.elements.panier import Panier
 from classes.elements.terrain import Terrain
-from classes.gestionnaires_collision.base.gestionnaire_collision import GestionnaireCollision
+from classes.monde.base.monde import Monde
 
 
 class App(ShowBase):
 
     def __init__(self):
         ShowBase.__init__(self)
+
         self.FPS = 60
 
-        # Activation du moteur physique
-        self.enableParticles()
+        self.monde = Monde(self)
 
-        # Creation du gestionnaire de collision
-        self.gestionnaire_collision = GestionnaireCollision(self)
-        self.gestionnaire_collision.e = 0.78  # coefficient de restitution d'une balle de basket
+        self.configuration_camera()
+        self.configuration_monde()
+        self.configuration_elements()
 
+        self.monde.lancer()
+
+    def configuration_camera(self):
+        self.disableMouse()
+        self.camera.setPos(-1, 0, 2)
+
+    def configuration_monde(self):
+        # Creation de la gravite
+        self.monde.setGravity(0, 0, -9.81)
+
+        # Activation de la table de collision
+        self.monde.initSurfaceTable(1)
+
+        # Creation d'une nouvelle surface de collision base sur la balle
+        coeff_restitution = mean([0.76, 0.80])
+        velocite_rebond_min = 10 ** -3
+        self.monde.setSurfaceEntry(0, 0, 150, coeff_restitution, velocite_rebond_min, 0.9, 0.00001, 0.0, 0.002)
+
+    def configuration_elements(self):
         # Chargement du panier de basket
         panier = Panier(self)
 
         # Modification de la position du panier de basket
-        panier.set_position(-3.35, 10, 2)
-
-        # Chargement de la balle
-        self.balle = Balle(self)
-
-        # Modification de la position de la balle
-        self.balle.set_position(1, 10, 2)
-
-        # ajout de la balle dans le gestionnaire de collision
-        self.gestionnaire_collision.ajout_element(self.balle)
+        panier.set_position(-3.35, 10, 2.06)
 
         # Chargement du terrain
-        Terrain(self)
+        terrain = Terrain(self)
 
-        # Creation d'un noeud pour la gravite lier au rendu
-        gravity_fn = ForceNode('force-gravite')
-        # Ajout de la force de gravite au rendu
-        self.render.attachNewNode(gravity_fn)
-        # Creation de force de gravite
-        gravity_force = LinearVectorForce(0, 0, -9.81)
-        # Ajout de la force de gravite au noeud
-        gravity_fn.addForce(gravity_force)
-        # Acceleration uniforme
-        gravity_force.setMassDependent(False)
-        # Ajout de la gravite au moteur physique
-        self.physicsMgr.addLinearForce(gravity_force)
+        # Modification de la position du terrain
+        terrain.set_position(10, 17.5, 0)
+
+        # Chargement de la balle
+        balle = Balle(self)
+
+        # Modification de la position de la balle
+        balle.set_position(1.1,  10, 2)

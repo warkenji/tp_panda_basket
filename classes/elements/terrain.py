@@ -1,4 +1,5 @@
-from panda3d.core import CollisionPlane, Plane, Vec3, Point3
+from panda3d.core import BitMask32, Vec4
+from panda3d.ode import OdePlaneGeom
 
 from classes.elements.base.element_plat import ElementPlat
 
@@ -13,14 +14,10 @@ class Terrain(ElementPlat):
         # Modification de la taille du terrain
         self.set_taille(28 / 2.0, 14.5, 15)
 
-        # Modification de la position du terrain
-        self.set_position(10, 17.5, 0)
+        # Creation d'un element geometrique plat
+        geom = OdePlaneGeom(self.app.monde.espace, Vec4(0, 0, 1, 0))
 
-        self.acteur.getPhysicsObject().setMass(5.972 * 10 ** 24)
+        # Defini les parametres de collision
+        geom.setCollideBits(BitMask32(0x00000001))
+        geom.setCategoryBits(BitMask32(0x00000002))
 
-        solide = CollisionPlane(Plane(Vec3(0, -1, 0), Point3(0, 0, 0)))
-
-        self.collision.addSolid(solide)
-
-        # Affichage de la colision
-        self.obj_collision.show()
