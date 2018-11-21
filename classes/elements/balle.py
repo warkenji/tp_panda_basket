@@ -48,3 +48,8 @@ class Balle(ElementModele):
         ElementModele.set_rotation(self, x, y, z)
 
         self.corps.setQuaternion(self.modele.getQuat(self.app.render))
+
+    def set_tir(self, force, position):
+        self.set_position(position.x, position.y, position.z)
+
+        self.corps.addForce(force)

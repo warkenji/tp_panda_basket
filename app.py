@@ -1,5 +1,6 @@
 from direct.showbase.ShowBase import ShowBase
 from numpy import mean
+from panda3d.core import LVector3f
 
 from classes.elements.balle import Balle
 from classes.elements.panier import Panier
@@ -24,7 +25,7 @@ class App(ShowBase):
 
     def configuration_camera(self):
         self.disableMouse()
-        self.camera.setPos(-1, 0, 2)
+        self.camera.setPos(0, -10, 2)
 
     def configuration_monde(self):
         # Creation de la gravite
@@ -54,5 +55,4 @@ class App(ShowBase):
         # Chargement de la balle
         balle = Balle(self)
 
-        # Modification de la position de la balle
-        balle.set_position(1.1,  10, 2)
+        balle.set_tir(LVector3f(-2.5, 0, 0), LVector3f(1.1, 10, 2))
