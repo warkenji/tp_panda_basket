@@ -45,7 +45,7 @@ class Monde(OdeWorld):
     def simulation(self, task):
         self.espace.autoCollide()  # Setup the contact joints
         # Step the simulation and set the new positions
-        self.quickStep(globalClock.getDt())
+        self.quickStep(1.0 / self.app.FPS)
 
         self.lock.acquire()
 

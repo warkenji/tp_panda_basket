@@ -1,16 +1,21 @@
+from random import random
+
 from numpy import pi, mean
-from panda3d.core import BitMask32
+from panda3d.core import BitMask32, LVector3f
 from panda3d.ode import OdeSphereGeom, OdeMass
 
 from classes.elements.base.element_modele import ElementModele
 
 
 class Balle(ElementModele):
+    session = random()
+
     def __init__(self, app):
         ElementModele.__init__(self, app, "balle", "modeles/ball/NBA BASKETBALL.obj", "modeles/ball/NBA BASKETBALL DIFFUSE.jpg")
 
         # Taille moyenne d'une balle
         taille = mean([23.8, 24.8]) * 10 ** -2
+        self.session_courante = Balle.session
 
         # Rayon de la balle
         rayon = taille / 2.0
@@ -27,22 +32,23 @@ class Balle(ElementModele):
         self.corps.setMass(masse)
 
         # Creation d'un element geometrique spherique
-        geom = OdeSphereGeom(self.app.monde.espace, taille / 2.0)
+        self.geom = OdeSphereGeom(self.app.monde.espace, taille / 2.0)
 
         # Defini les parametres de collision
-        geom.setCollideBits(BitMask32(0x00000002))
-        geom.setCategoryBits(BitMask32(0x00000001))
+        self.geom.setCollideBits(BitMask32(0x00000002))
+        self.geom.setCategoryBits(BitMask32(0x00000001))
 
         # Attache l'element geometrique a la balle
-        geom.setBody(self.corps)
+        self.geom.setBody(self.corps)
 
         # Ajout de la balle comme element dynamique
         self.app.monde.ajouter_element(self)
 
     def set_position(self, x, y, z):
-        ElementModele.set_position(self, x, y, z)
+        self.corps.setPosition(LVector3f(x, y, z))
 
-        self.corps.setPosition(self.modele.getPos(self.app.render))
+    def get_position(self):
+        return self.corps.getPosition()
 
     def set_rotation(self, x, y, z):
         ElementModele.set_rotation(self, x, y, z)
@@ -50,6 +56,7 @@ class Balle(ElementModele):
         self.corps.setQuaternion(self.modele.getQuat(self.app.render))
 
     def set_tir(self, force, position):
+        self.corps.setLinearVel(0, 0, 0)
+        self.corps.setAngularVel(0, 0, 0)
         self.set_position(position.x, position.y, position.z)
-
-        self.corps.addForce(force)
+        self.corps.setForce(force)

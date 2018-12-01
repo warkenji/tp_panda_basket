@@ -26,6 +26,9 @@ class Element:
         if self.modele is not None:
             self.modele.setPos(x, y, z)
 
+    def get_position(self):
+        return self.modele.getPos()
+
     def set_rotation(self, x, y, z):
         if self.modele is not None:
             self.modele.setHpr(x, y, z)
