@@ -1,13 +1,15 @@
-from math import hypot
+import csv
 from random import randint, random
 
+import tensorflow as tf
 from direct.showbase.ShowBase import ShowBase
-from numpy import mean
+from numpy import mean, loadtxt
 from panda3d.core import LVector3f
 
 from classes.elements.balle import Balle
 from classes.elements.panier import Panier
 from classes.elements.terrain import Terrain
+from classes.intelligence_artificiel.base.intelligence_artificiel import IntelligenceArtificiel
 from classes.monde.base.monde import Monde
 
 
@@ -18,21 +20,26 @@ class App(ShowBase):
 
         self.balles = {}
 
+        self.modele = None
+        self.csv_ecriture = None
+
         self.FPS = 60
         self.pos_balle = LVector3f()
 
         self.monde = Monde(self)
-        self.impulsion = 0
+        self.force = 0
         self.impulsion_relative = 0
 
         self.configuration_camera()
         self.configuration_monde()
         self.configuration_elements()
 
+        self.ia = IntelligenceArtificiel()
+
         self.monde.lancer()
 
-        self.taskMgr.doMethodLater(0.25, self.balleAleatoire, "LancementBalle")
-
+        # self.taskMgr.doMethodLater(0.5, self.balleAleatoire, "LancementBalle")
+        self.taskMgr.doMethodLater(0.5, self.ballePredit, "LancementBalle")
 
     def configuration_camera(self):
         #self.disableMouse()
@@ -68,86 +75,120 @@ class App(ShowBase):
         self.pos_balle = LVector3f(3, 10, 2)
 
         self.monde.espace.setCollisionEvent("ode-collision")
-        self.accept("ode-collision", self.onCollision)
+        self.accept("ode-collision", self.on_collision)
 
     def balleAleatoire(self, task):
-        # Chargement de la balle
-        balle = Balle(self)
-        self.balles[str(balle.corps)] = balle
+        if self.csv_ecriture is None:
+            fichier_csv = open('train_data.csv')
+            self.csv_ecriture = csv.writer(fichier_csv)
+            self.csv_ecriture.writerow(['distance', 'force'])
+
         position_panier = self.panier.geom_cylinder.getPosition()
         position = position_panier - self.pos_balle
-        distance_horizontal = hypot(position.x, position.y)
-        distance_vertical = hypot(0, position.z)
+        distance = (position.x ** 2 + position.y ** 2 + position.z ** 2) ** 0.5
 
-        pos_z = hypot(distance_horizontal, distance_vertical) * 2
+        self.force += 1
 
-        force = LVector3f(position.x, position.y, pos_z)
-        force.normalize()
-        self.impulsion += 5
+        # Chargement de la balle
+        balle = Balle(self, distance, self.force)
+        self.balles[str(balle.corps)] = balle
 
-        balle.set_tir(force * self.impulsion, self.pos_balle)
+        pos_z = distance * 2
+
+        direction = LVector3f(position.x, position.y, pos_z)
+        direction.normalize()
+
+        balle.set_tir(direction * self.force, self.pos_balle)
 
         return task.again
 
-    def onCollision(self, entry):
+    def ballePredit(self, task):
+        if self.modele is None:
+            self.modele = tf.keras.models.load_model('tf_model.h5')
+
+        # Chargement de la balle
+        balle = Balle(self)
+
+        x = randint(-2, 9)
+        y = randint(3, 17)
+        z = random() / 2 + 2
+
+        pos_balle = LVector3f(x, y, z)
+        self.balles[str(balle.corps)] = balle
+        position_panier = self.panier.geom_cylinder.getPosition()
+        position = position_panier - pos_balle
+        distance = (position.x ** 2 + position.y ** 2 + position.z ** 2) ** 0.5
+
+        pos_z = distance * 2
+
+        direction = LVector3f(position.x, position.y, pos_z)
+        direction.normalize()
+        force = self.modele.predict([distance / 15.0]).flatten()[0] * 500
+
+        balle.set_tir(direction * force, pos_balle)
+
+        return task.again
+
+    def data_vers_modele(self):
+        data = loadtxt("train_data.csv", delimiter=",", skiprows=1)
+
+        train_x = data[:, 0] / 15
+        train_y = data[:, 1] / 500
+
+        model = tf.keras.Sequential([
+            tf.keras.layers.Dense(units=1, input_shape=(1,), activation=tf.nn.relu),
+            tf.keras.layers.Dense(units=64, activation=tf.nn.relu),
+            tf.keras.layers.Dense(units=1)
+        ])
+
+        optimizer = tf.train.RMSPropOptimizer(0.001)
+
+        model.compile(loss='mse', optimizer=optimizer, metrics=['mae'])
+
+        model.fit(train_x, train_y, epochs=500, validation_split=0.2, verbose=0)
+
+        model.save('tf_model.h5')
+
+    def on_collision(self, entry):
         geom1 = entry.getGeom1()
         geom2 = entry.getGeom2()
+        cle = None
+        tir_reussi = False
 
         if self.terrain.geom.compareTo(geom1) == 0 or self.terrain.geom.compareTo(geom2) == 0:
 
             if self.terrain.geom.compareTo(geom1) != 0:
                 cle = str(geom1.getBody())
-                balle = self.balles[cle]
-                del(self.balles[cle])
-
-                self.monde.retirer_element(balle)
-                balle.modele.removeNode()
-                balle.geom.destroy()
-                balle.corps.destroy()
 
             elif self.terrain.geom.compareTo(geom2) != 0:
                 cle = str(geom2.getBody())
-                balle = self.balles[cle]
-                del(self.balles[cle])
-
-                self.monde.retirer_element(balle)
-                balle.modele.removeNode()
-                balle.geom.destroy()
-                balle.corps.destroy()
 
         elif self.panier.geom_cylinder.compareTo(geom1) == 0 or self.panier.geom_cylinder.compareTo(geom2) == 0:
-            x = randint(-2, 9)
-            y = randint(3, 17)
-            # y = 10
-            z = random() / 2 + 2
+            tir_reussi = True
 
             if self.panier.geom_cylinder.compareTo(geom1) != 0:
                 cle = str(geom1.getBody())
-                balle = self.balles[cle]
-                del(self.balles[cle])
-
-                if balle.session_courante == Balle.session:
-                    self.pos_balle = LVector3f(x, y, z)
-                    self.impulsion = 0
-                    Balle.session = random()
-
-                self.monde.retirer_element(balle)
-                balle.modele.removeNode()
-                balle.geom.destroy()
-                balle.corps.destroy()
 
             elif self.panier.geom_cylinder.compareTo(geom2) != 0:
                 cle = str(geom2.getBody())
-                balle = self.balles[cle]
-                del(self.balles[cle])
+
+        if cle is not None:
+            balle = self.balles[cle]
+            del (self.balles[cle])
+
+            self.monde.retirer_element(balle)
+            balle.modele.removeNode()
+            balle.geom.destroy()
+            balle.corps.destroy()
+
+            if self.csv_ecriture is not None and tir_reussi:
+                x = randint(-2, 9)
+                y = randint(3, 17)
+                z = random() / 2 + 2
+
+                self.csv_ecriture.writerow([balle.distance, balle.force])
 
                 if balle.session_courante == Balle.session:
                     self.pos_balle = LVector3f(x, y, z)
-                    self.impulsion = 0
+                    self.force = 0
                     Balle.session = random()
-
-                self.monde.retirer_element(balle)
-                balle.modele.removeNode()
-                balle.geom.destroy()
-                balle.corps.destroy()
-

@@ -10,12 +10,15 @@ from classes.elements.base.element_modele import ElementModele
 class Balle(ElementModele):
     session = random()
 
-    def __init__(self, app):
+    def __init__(self, app, distance=0, force=0):
         ElementModele.__init__(self, app, "balle", "modeles/ball/NBA BASKETBALL.obj", "modeles/ball/NBA BASKETBALL DIFFUSE.jpg")
 
         # Taille moyenne d'une balle
         taille = mean([23.8, 24.8]) * 10 ** -2
         self.session_courante = Balle.session
+
+        self.distance = distance
+        self.force = force
 
         # Rayon de la balle
         rayon = taille / 2.0
