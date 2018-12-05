@@ -1,9 +1,8 @@
-import csv
 from random import randint, random
 
 import tensorflow as tf
 from direct.showbase.ShowBase import ShowBase
-from numpy import mean, loadtxt
+from numpy import mean
 from panda3d.core import LVector3f
 
 from classes.elements.balle import Balle
@@ -14,13 +13,13 @@ from classes.monde.base.monde import Monde
 
 class App(ShowBase):
 
-    def __init__(self):
+    def __init__(self, chemin_fichier='tf_model.h5'):
         ShowBase.__init__(self)
 
         self.balles = {}
+        self.chemin_fichier = chemin_fichier
 
         self.modele = None
-        self.csv_ecriture = None
 
         self.FPS = 60
         self.pos_balle = LVector3f()
@@ -74,51 +73,9 @@ class App(ShowBase):
         self.monde.espace.setCollisionEvent("ode-collision")
         self.accept("ode-collision", self.on_collision)
 
-    def balleAleatoire(self, task):
-        if self.csv_ecriture is None:
-            fichier_csv = open('train_data.csv')
-            self.csv_ecriture = csv.writer(fichier_csv)
-            self.csv_ecriture.writerow(['distance', 'force'])
-
-        position_panier = self.panier.geom_cylinder.getPosition()
-        position = position_panier - self.pos_balle
-        distance = (position.x ** 2 + position.y ** 2 + position.z ** 2) ** 0.5
-
-        self.force += 1
-
-        # Chargement de la balle
-        balle = Balle(self, distance, self.force)
-        self.balles[str(balle.corps)] = balle
-
-        pos_z = distance * 2
-
-        direction = LVector3f(position.x, position.y, pos_z)
-        direction.normalize()
-
-        balle.set_tir(direction * self.force, self.pos_balle)
-
-        return task.again
-
     def ballePredit(self, task):
         if self.modele is None:
-            self.modele = tf.keras.models.load_model('tf_model.h5')
-
-            # data = loadtxt("train_data.csv", delimiter=",", skiprows=1)
-            #
-            # train_x = data[0:1000, 0] / 15
-            # train_y = data[0:1000, 1] / 500
-            #
-            # self.modele = tf.keras.Sequential([
-            #     tf.keras.layers.Dense(units=1, input_shape=(1,), activation=tf.nn.relu),
-            #     tf.keras.layers.Dense(units=64, activation=tf.nn.relu),
-            #     tf.keras.layers.Dense(units=1)
-            # ])
-            #
-            # optimizer = tf.train.RMSPropOptimizer(0.001)
-            #
-            # self.modele.compile(loss='mse', optimizer=optimizer, metrics=['mae'])
-            #
-            # self.modele.fit(train_x, train_y, epochs=500, validation_split=0.2, verbose=0)
+            self.modele = tf.keras.models.load_model(self.chemin_fichier)
 
         # Chargement de la balle
         balle = Balle(self)
@@ -142,26 +99,6 @@ class App(ShowBase):
         balle.set_tir(direction * force, pos_balle)
 
         return task.again
-
-    def data_vers_modele(self):
-        data = loadtxt("train_data.csv", delimiter=",", skiprows=1)
-
-        train_x = data[:, 0] / 15
-        train_y = data[:, 1] / 500
-
-        model = tf.keras.Sequential([
-            tf.keras.layers.Dense(units=1, input_shape=(1,), activation=tf.nn.relu),
-            tf.keras.layers.Dense(units=64, activation=tf.nn.relu),
-            tf.keras.layers.Dense(units=1)
-        ])
-
-        optimizer = tf.train.RMSPropOptimizer(0.001)
-
-        model.compile(loss='mse', optimizer=optimizer, metrics=['mae'])
-
-        model.fit(train_x, train_y, epochs=500, validation_split=0.2, verbose=0)
-
-        model.save('tf_model.h5')
 
     def on_collision(self, entry):
         geom1 = entry.getGeom1()
@@ -194,15 +131,3 @@ class App(ShowBase):
             balle.modele.removeNode()
             balle.geom.destroy()
             balle.corps.destroy()
-
-            if self.csv_ecriture is not None and tir_reussi:
-                x = randint(-2, 9)
-                y = randint(3, 17)
-                z = random() / 2 + 2
-
-                self.csv_ecriture.writerow([balle.distance, balle.force])
-
-                if balle.session_courante == Balle.session:
-                    self.pos_balle = LVector3f(x, y, z)
-                    self.force = 0
-                    Balle.session = random()
