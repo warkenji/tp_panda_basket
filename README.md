@@ -25,7 +25,7 @@ conversion(chemin_donnee='train_data.csv', chemin_modele='tf_model.h5')
 
 ## Lancement de la prediction depuis le jeu de donnée:
 #### Instruction
-Lancez la commande `python main_prediction_donnee.py
+Lancez la commande `python main_prediction_donnee.py`
 
 #### Paramètre de la classe App:
 ```python
