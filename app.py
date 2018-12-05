@@ -9,7 +9,6 @@ from panda3d.core import LVector3f
 from classes.elements.balle import Balle
 from classes.elements.panier import Panier
 from classes.elements.terrain import Terrain
-from classes.intelligence_artificiel.base.intelligence_artificiel import IntelligenceArtificiel
 from classes.monde.base.monde import Monde
 
 
@@ -33,8 +32,6 @@ class App(ShowBase):
         self.configuration_camera()
         self.configuration_monde()
         self.configuration_elements()
-
-        self.ia = IntelligenceArtificiel()
 
         self.monde.lancer()
 
@@ -105,6 +102,23 @@ class App(ShowBase):
     def ballePredit(self, task):
         if self.modele is None:
             self.modele = tf.keras.models.load_model('tf_model.h5')
+
+            # data = loadtxt("train_data.csv", delimiter=",", skiprows=1)
+            #
+            # train_x = data[0:1000, 0] / 15
+            # train_y = data[0:1000, 1] / 500
+            #
+            # self.modele = tf.keras.Sequential([
+            #     tf.keras.layers.Dense(units=1, input_shape=(1,), activation=tf.nn.relu),
+            #     tf.keras.layers.Dense(units=64, activation=tf.nn.relu),
+            #     tf.keras.layers.Dense(units=1)
+            # ])
+            #
+            # optimizer = tf.train.RMSPropOptimizer(0.001)
+            #
+            # self.modele.compile(loss='mse', optimizer=optimizer, metrics=['mae'])
+            #
+            # self.modele.fit(train_x, train_y, epochs=500, validation_split=0.2, verbose=0)
 
         # Chargement de la balle
         balle = Balle(self)
